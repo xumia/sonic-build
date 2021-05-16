@@ -50,7 +50,11 @@ function RedirectArtifacts(req, res, next) {
             var queryFormat = query.format == null ? 'file' : query.format;
             downloadUrl = downloadUrl.replace('format=zip', util.format('format=%s', queryFormat));
         }
-        downloadUrl = downloadUrl + "&subPath=" + query.subPath;
+        var subPath = query.subPath;
+        if (!subPath.startsWith('/')){
+            subPath = '/' + subPath;
+      }
+      downloadUrl = downloadUrl + "&subPath=" + subPath;
     }
     //console.log(downloadUrl);
     res.redirect(downloadUrl);
