@@ -7,6 +7,17 @@ const succeededBuildUrlFormat = "https://dev.azure.com/%s/%s/_apis/build/builds?
 const artifactUrlFormat = "https://dev.azure.com/%s/%s/_apis/build/builds/%s/artifacts?artifactName=%s";
 const buildResultUrlFormat = "https://dev.azure.com/%s/%s/_build/results?buildId=%s&view=results";
 
+const platformMapping = {"broadcom" : 138,
+"barefoot" : 146,
+"centec" : 143,
+"centec-arm64" : 140,
+"generic": 147,
+"innovium" : 148,
+"marvell-armhf" : 141,
+"mellanox": 139,
+"nephos" : 149,
+"vs" : 142,};
+
 function GetLatestBuild(req) {
   var params = req.params;
   var query = req.query;
@@ -56,8 +67,31 @@ function RedirectArtifacts(req, res, next) {
       }
       downloadUrl = downloadUrl + "&subPath=" + subPath;
     }
-    //console.log(downloadUrl);
     res.redirect(downloadUrl);
+}
+
+function RedirectSonicArtifacts(req, res, next) {
+    var params = req.params;
+    var query = req.query;
+    params['organization'] = 'mssonic';
+    params['project'] = 'build';
+    params['buildId'] = 'latest';
+    var platform = query.platform;
+    if (platform == null){
+        var message = "The parameter platform is empty.";
+        return res.status(400).json({status: 400, message: message});
+    }
+    var definitionId = platformMapping[platform];
+    if (definitionId == null){
+      var message = util.format("The platform '%s' is not defined.", platform);
+      return res.status(400).json({status: 400, message: message});
+    }
+    if (query.target != null){
+        query.subPath = query.target;
+    }
+    params['definitionId'] = definitionId;
+    query['artifactName'] = 'sonic-buildimage.' + platform;
+    RedirectArtifacts(req, res, next);
 }
 
 /* GET home page. */
@@ -72,5 +106,8 @@ router.get('/azp/:organization/:project/_apis/build/definition/:definitionId/bui
 * Query: ?branchName=<master>&artifactName=<sonic-buildimage.vs>&subPath=</target/sonic-vs.img.gz>&format=<file|zip>
 */
 router.get('/azp/:organization/:project/_apis/build/definition/:definitionId/build/:buildId/artifacts', RedirectArtifacts);
+
+/* Get the SONiC build artifacts */
+router.get('/sonic/artifacts', RedirectSonicArtifacts);
 
 module.exports = router;
