@@ -9,6 +9,27 @@ const buildResultUrlFormat = "https://dev.azure.com/mssonic/build/_build/results
 
 const query_sonicimagebuilds = 'GetSonicImageBuilds()  | order by Platform asc, SourceBranch desc | project Sequence=row_number(), DefinitionId, DefinitionName, Platform, SourceBranch'
 
+function GetArtifactItems(items){
+  var results = [];
+  if (items == null){
+    return results;
+  }
+  for(var i= 0; i < items.length; i++){
+    item = items[0];
+    results.push(item);
+    var itemResults = GetArtifactItems(item.items);
+    item['items'] = null;
+    console.log(item);
+    results.concat(itemResults);
+  }
+
+  return results;
+}
+
+function GetArtifacts(artifacts){
+    for(var item in artifacts.item);
+}
+
 // Navigators
 // Home/Builds|ImageBuilds/buildName|Latest/artifacts
 // URL /sonicimagebuilds/<buildName>/[<buildId>|latest]/artifacts
@@ -55,7 +76,8 @@ router.get('/sonic/builds/:buildId/artifacts/:artifactId', function(req, res, ne
     var artifactsRes = request('POST', url, options);
     var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
     var dataProvider = artifacts['dataProviders']['ms.vss-build-web.run-artifacts-data-provider'];
-    res.write(JSON.stringify(dataProvider));
+    var items = GetArtifactItems(dataProvider.items);
+    res.write(JSON.stringify(items));
     res.end();
   });
 
