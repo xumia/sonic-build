@@ -33,7 +33,7 @@ router.get('/sonic/builds/:buildid/artifacts', function(req, res, next) {
   });
 
 /* Get SONiC artifact files. */
-router.get('/sonic/builds/:buildid/artifacts/:artifactId', function(req, res, next) {
+router.get('/sonic/builds/:buildId/artifacts/:artifactId', function(req, res, next) {
     var params = req.params;
     var query = req.query;
     var sourceUrl = util.format(buildResultUrlFormat, params.buildId);
