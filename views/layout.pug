@@ -4,4 +4,12 @@ html
     title= title
     link(rel='stylesheet', href='/stylesheets/style.css')
   body
+    ul(class='breadcrumb')
+      li
+        a(href="/") Home
+      if navigators
+        each val in navigators
+          li
+            a(href=val.href)= val.name
+      block block_navigators
     block content
