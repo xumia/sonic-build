@@ -1,4 +1,6 @@
 extends layout
+block block_navigators
+  li Artifacts
 block content
   table(class="simpletable")
     tr
@@ -10,4 +12,4 @@ block content
         td= row.seq
         td= row.id
         td
-          a(href="/ui/sonic/pipelines/" + row.definitionId + "/builds/" + row.buildId + "/artifacts/" + row.id, target="_blank")= row.name
+          a(href="/ui/sonic/pipelines/" + row.definitionId + "/builds/" + row.buildId + "/artifacts/" + row.id + "?branchName=" + branchName + "&artifactName=" + row.name, target="_blank")= row.name

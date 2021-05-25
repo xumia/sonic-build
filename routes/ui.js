@@ -5,6 +5,8 @@ const constants = require('./constants');
 const kusto = require('./kusto');
 const util = require('util');
 
+const navigator_pipelines = [{name:'Pipelines', href:'/ui/sonic/Pipelines'}];
+
 const buildUrlFormat = "https://dev.azure.com/mssonic/build/_apis/build/builds?definitions=%s&branchName=refs/heads/%s&statusFilter=completed";
 const buildResultUrlFormat = "https://dev.azure.com/mssonic/build/_build/results?buildId=%s&view=artifacts&pathAsName=false&type=publishedArtifacts";
 const artifactUrlFormat = "https://dev.azure.com/mssonic/build/_apis/build/builds/%s/artifacts";
@@ -46,10 +48,10 @@ router.get('/sonic/pipelines', async function(req, res, next) {
     console.log(req);
     console.log(constants.NAVIGATOR_BARTIFACTS);
     var results = await kusto.query(query_sonicimagebuilds);
-    res.render('pipelines', { title: 'Builds',
+    res.render('pipelines', { title: 'Pipelines',
       columns: kusto.getColumnNames(results),
       rows: results['_rows'],
-      navigators:constants.NAVIGATOR_ARTIFACTS });
+      navigators:[] });
   });
 
 /* Get SONiC builds. */
@@ -59,21 +61,17 @@ router.get('/sonic/pipelines/:definitionId/builds', function(req, res, next) {
   var url = util.format(buildUrlFormat, params.definitionId, query.branchName)
   var buildsRes = request('GET', url);
   var builds = JSON.parse(buildsRes.getBody('utf8'));
-  for(var i=0; i<builds['value'].length; i++){
-    var row = builds['value'][i];
-    console.log(i);
-    console.log(row._links.web.href);
-  }
   res.render('builds', { title: 'Builds',
       rows: builds['value'],
-      navigators:constants.NAVIGATOR_ARTIFACTS });
+      navigators:navigator_pipelines });
 });
 
 /* Get SONiC artifacts. */
 router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts', function(req, res, next) {
   var params = req.params;
   var query = req.query;
-  var url = util.format(artifactUrlFormat, params.buildId)
+  var url = util.format(artifactUrlFormat, params.buildId);
+  var navigator_builds = navigator_pipelines.concat([{name:'Builds', href:`/ui/sonic/pipelines/${params.definitionId}/builds?branchName=${query.branchName}`}]);
   var artifactsRes = request('GET', url);
   var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
   for(var i=0; i<artifacts['value'].length; i++){
@@ -87,7 +85,8 @@ router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts', function(
   console.log(artifacts['value']);
   res.render('artifact-names', { title: 'Artifacts',
       rows: artifacts['value'],
-      navigators:constants.NAVIGATOR_ARTIFACTS });
+      branchName: query.branchName,
+      navigators: navigator_builds});
   });
 
 /* Get SONiC artifact files. */
@@ -95,6 +94,9 @@ router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts/:artifactId
     var params = req.params;
     var query = req.query;
     var sourceUrl = util.format(buildResultUrlFormat, params.buildId);
+    var navigator_artifacts = navigator_pipelines.concat([{name:'Builds', href:`/sonic/pipelines/${params.definitionId}/builds?branchName=${query.branchName}`},
+    {name:'Artifacts', href:`/ui/sonic/pipelines/${params.definitionId}/builds/${params.buildId}/artifacts?branchName=${query.branchName}`},
+    ]);
     var url = 'https://dev.azure.com/mssonic/_apis/Contribution/HierarchyQuery/project/be1b070f-be15-4154-aade-b1d3bfb17054';
     var body = {"contributionIds":["ms.vss-build-web.run-artifacts-data-provider"],
     "dataProviderContext":{"properties":{
@@ -112,14 +114,15 @@ router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts/:artifactId
     };
     var artifactsRes = request('POST', url, options);
     var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
+    console.log(artifacts);
     var dataProvider = artifacts['dataProviders']['ms.vss-build-web.run-artifacts-data-provider'];
     var items = GetArtifactItems(dataProvider.items);
     for (var i=0; i<items.length; i++){
         items[i]['seq'] = i + 1;
     }
-    res.render('artifacts', { title: 'Artifacts',
+    res.render('artifacts', { title: 'Artifact ' + query.artifactName,
       rows: items,
-      navigators:constants.NAVIGATOR_ARTIFACTS });
+      navigators: navigator_artifacts});
 });
 
 module.exports = router;
