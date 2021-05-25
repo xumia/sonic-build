@@ -2,18 +2,23 @@ extends layout
 block content
   table(class="simpletable")
     tr
-      th Seq.
-      th Platform
-      th BranchName
-      th Builds
-      th LatestArtifacts
+      th BuildId
+      th BuildNumber
+      th BuildName
+      th Result
+      th StartTime
+      th FinishTime
+      th BuildLink
+      th Artifacts
     each row in rows
-      //Sequence, DefinitionId, DefinitionName, Platform, SourceBranch'
       tr
-        td= row[0]
-        td= row[3]
-        td= row[4]
+        td= row.id
+        td= row.buildNumber
+        td= row.definition.name
+        td= row.result
+        td= row.startTime.substring(0,19)
+        td= row.finishTime.substring(0,19)
         td
-          a(href="https://dev.azure.com/mssonic/build/_build?definitionId=" + row[1], target="_blank") Link
+          a(href=row._links.web.href, target="_blank") Build Link
         td
-          a(href="/ui/sonic/artifacts&platform=" + row[3] + "&branchName=" + row[4], target="_blank") Latest Artifacts
+          a(href="/ui/sonic/pipelines/" + row.definition.id + "/builds/" + row.id + "/artifacts?branchName=" + row.sourceBranch.replace("refs/heads/", ""), target="_blank") Artifacts

@@ -1,0 +1,13 @@
+extends layout
+block content
+  table(class="simpletable")
+    tr
+      th Seq.
+      th ArtifactId
+      th Name
+    each row in rows
+      tr
+        td= row.seq
+        td= row.id
+        td
+          a(href="/ui/sonic/pipelines/" + row.definitionId + "/builds/" + row.buildId + "/artifacts/" + row.id, target="_blank")= row.name

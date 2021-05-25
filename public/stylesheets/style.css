@@ -30,20 +30,24 @@ ul.breadcrumb li a:hover {
   text-decoration: underline;
 }
 
-font-family: Arial, Helvetica, sans-serif;
-  border-collapse: collapse;
-  width: 100%;
 
-td, th {
-  border: 1px solid #ddd;
-  padding: 8px;
+.simpletable{
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
 }
 
-tr:nth-child(even){background-color: #f2f2f2;}
+table.simpletable td, th {
+  border: 1px solid #ddd;
+  padding: 1px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
 
-tr:hover {background-color: #ddd;}
+table.simpletable tr:nth-child(even){background-color: #f2f2f2;}
 
-th {
+table.simpletable tr:hover {background-color: #ddd;}
+
+table.simpletable th {
   padding-top: 12px;
   padding-bottom: 12px;
   text-align: left;

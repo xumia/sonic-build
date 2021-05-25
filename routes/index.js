@@ -58,8 +58,8 @@ function RedirectArtifacts(req, res, next) {
         var subPath = query.subPath;
         if (!subPath.startsWith('/')){
             subPath = '/' + subPath;
-      }
-      downloadUrl = downloadUrl + "&subPath=" + subPath;
+        }
+        downloadUrl = downloadUrl + "&subPath=" + subPath;
     }
     res.redirect(downloadUrl);
 }
@@ -69,21 +69,29 @@ function RedirectSonicArtifacts(req, res, next) {
     var query = req.query;
     params['organization'] = 'mssonic';
     params['project'] = 'build';
-    params['buildId'] = 'latest';
-    var platform = query.platform;
-    if (platform == null){
-        var message = "The parameter platform is empty.";
-        return res.status(400).json({status: 400, message: message});
+    if (params['buildId'] == null) {
+        params['buildId'] = 'latest';
     }
-    var definitionId = platformMapping[platform];
+
+    var definitionId = query.definitionId;
     if (definitionId == null){
-      var message = util.format("The platform '%s' is not defined.", platform);
-      return res.status(400).json({status: 400, message: message});
+        var platform = query.platform;
+        if (platform == null){
+            var message = "The parameter platform is empty.";
+            return res.status(400).json({status: 400, message: message});
+        }
+        definitionId = platformMapping[platform];
+        if (definitionId == null){
+            var message = util.format("The platform '%s' is not defined.", platform);
+            return res.status(400).json({status: 400, message: message});
+        }
     }
+
+    params['definitionId'] = definitionId;
     if (query.target != null){
         query.subPath = query.target;
     }
-    params['definitionId'] = definitionId;
+    
     query['artifactName'] = 'sonic-buildimage.' + platform;
     RedirectArtifacts(req, res, next);
 }

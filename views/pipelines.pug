@@ -1,0 +1,24 @@
+extends layout
+block content
+  table(class="simpletable")
+    tr
+      th Seq.
+      th Platform
+      th BranchName
+      th DefinitionId
+      th DefinitionName
+      th Builds
+      th LatestArtifacts
+    each row in rows
+      //Sequence, DefinitionId, DefinitionName, Platform, SourceBranch'
+      tr
+        td= row[0]
+        td= row[3]
+        td= row[4]
+        td= row[1]
+        td
+          a(href="https://dev.azure.com/mssonic/build/_build?definitionId=" + row[1], target="_blank")= row[2]
+        td
+          a(href="/ui/sonic/pipelines/" + row[1] + "/builds?branchName="  + row[4]) Build History
+        td
+          a(href="/ui/sonic/pipelines/" + row[1] + "/builds/latest/artifacts?branchName=" + row[4], target="_blank") Latest Artifacts

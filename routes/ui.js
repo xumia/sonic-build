@@ -5,7 +5,9 @@ const constants = require('./constants');
 const kusto = require('./kusto');
 const util = require('util');
 
+const buildUrlFormat = "https://dev.azure.com/mssonic/build/_apis/build/builds?definitions=%s&branchName=refs/heads/%s&statusFilter=completed";
 const buildResultUrlFormat = "https://dev.azure.com/mssonic/build/_build/results?buildId=%s&view=artifacts&pathAsName=false&type=publishedArtifacts";
+const artifactUrlFormat = "https://dev.azure.com/mssonic/build/_apis/build/builds/%s/artifacts";
 
 const query_sonicimagebuilds = 'GetSonicImageBuilds()  | order by Platform asc, SourceBranch desc | project Sequence=row_number(), DefinitionId, DefinitionName, Platform, SourceBranch'
 
@@ -15,12 +17,16 @@ function GetArtifactItems(items){
     return results;
   }
   for(var i= 0; i < items.length; i++){
-    item = items[0];
+    var item = items[i];
+    if (item.name.startsWith("/target/versions")
+     || item.name.startsWith('/target/baseimage')){
+      continue;
+    }
+
     results.push(item);
     var itemResults = GetArtifactItems(item.items);
     item['items'] = null;
-    console.log(item);
-    results.concat(itemResults);
+    results.push(...itemResults);
   }
 
   return results;
@@ -35,26 +41,57 @@ function GetArtifacts(artifacts){
 // URL /sonicimagebuilds/<buildName>/[<buildId>|latest]/artifacts
 // URL: /builds[/folder/folderName]*/<buildName>/[<buildId>|latest]/artifacts
 
-/* Get SONiC builds. */
-router.get('/sonic/builds', async function(req, res, next) {
+/* Get SONiC pipelines. */
+router.get('/sonic/pipelines', async function(req, res, next) {
     console.log(req);
     console.log(constants.NAVIGATOR_BARTIFACTS);
     var results = await kusto.query(query_sonicimagebuilds);
-    res.render('builds', { title: 'Builds',
+    res.render('pipelines', { title: 'Builds',
       columns: kusto.getColumnNames(results),
       rows: results['_rows'],
       navigators:constants.NAVIGATOR_ARTIFACTS });
   });
 
+/* Get SONiC builds. */
+router.get('/sonic/pipelines/:definitionId/builds', function(req, res, next) {
+  var params = req.params;
+  var query = req.query;
+  var url = util.format(buildUrlFormat, params.definitionId, query.branchName)
+  var buildsRes = request('GET', url);
+  var builds = JSON.parse(buildsRes.getBody('utf8'));
+  for(var i=0; i<builds['value'].length; i++){
+    var row = builds['value'][i];
+    console.log(i);
+    console.log(row._links.web.href);
+  }
+  res.render('builds', { title: 'Builds',
+      rows: builds['value'],
+      navigators:constants.NAVIGATOR_ARTIFACTS });
+});
+
 /* Get SONiC artifacts. */
-router.get('/sonic/builds/:buildid/artifacts', function(req, res, next) {
-    console.log(req);
-    console.log(constants.NAVIGATOR_BARTIFACTS);
-    res.render('builds', { title: 'Builds', navigators:constants.NAVIGATOR_ARTIFACTS });
+router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts', function(req, res, next) {
+  var params = req.params;
+  var query = req.query;
+  var url = util.format(artifactUrlFormat, params.buildId)
+  var artifactsRes = request('GET', url);
+  var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
+  for(var i=0; i<artifacts['value'].length; i++){
+    var row = artifacts['value'][i];
+    row["seq"] = i + 1;
+    row["definitionId"] = params.definitionId;
+    row["buildId"] = params.buildId;
+    console.log(i);
+    console.log(row.name);
+  }
+  console.log(artifacts['value']);
+  res.render('artifact-names', { title: 'Artifacts',
+      rows: artifacts['value'],
+      navigators:constants.NAVIGATOR_ARTIFACTS });
   });
 
 /* Get SONiC artifact files. */
-router.get('/sonic/builds/:buildId/artifacts/:artifactId', function(req, res, next) {
+router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts/:artifactId', function(req, res, next) {
     var params = req.params;
     var query = req.query;
     var sourceUrl = util.format(buildResultUrlFormat, params.buildId);
@@ -77,8 +114,12 @@ router.get('/sonic/builds/:buildId/artifacts/:artifactId', function(req, res, ne
     var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
     var dataProvider = artifacts['dataProviders']['ms.vss-build-web.run-artifacts-data-provider'];
     var items = GetArtifactItems(dataProvider.items);
-    res.write(JSON.stringify(items));
-    res.end();
-  });
+    for (var i=0; i<items.length; i++){
+        items[i]['seq'] = i + 1;
+    }
+    res.render('artifacts', { title: 'Artifacts',
+      rows: items,
+      navigators:constants.NAVIGATOR_ARTIFACTS });
+});
 
 module.exports = router;

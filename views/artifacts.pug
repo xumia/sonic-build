@@ -1,0 +1,39 @@
+extends layout
+block content
+  script(type="text/javascript").
+    function copyToClipboard(elementId) {
+      /* Get the text field */
+      var copyText = document.getElementById(elementId);
+
+      /* Select the text field */
+      copyText.select();
+      copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+      /* Copy the text inside the text field */
+      document.execCommand("copy");
+
+      /* Alert the copied text */
+      alert("Copied the text: " + copyText.value);
+    }
+  table(class="simpletable")
+    tr
+      th Seq.
+      th Name
+      th Size
+      th Type
+      th Download
+      th Latest Link
+    each row in rows
+      //Sequence, DefinitionId, DefinitionName, Platform, SourceBranch'
+      tr
+        td= row.seq
+        td= row.name.substring(1)
+        td= row.size
+        td= row.type
+        td
+          a(href="/api/sonic/artifacts?target=" + row.name.substring(1), target="_blank") Link
+        td
+          a(id="latest-" + row.seq, href="/api/sonic/artifacts?target=" + row.name.substring(1), target="_blank") Link
+          
+          b &nbsp;&nbsp;&nbsp;
+          button(onclick="copyToClipboard('latest-" + row.seq + "')") Copy
