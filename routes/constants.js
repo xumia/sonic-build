@@ -13,8 +13,17 @@ const platformMapping = {"broadcom" : 138,
 "nephos" : 149,
 "vs" : 142,};
 
+function reverse(mapping){
+    var results = {};
+    for (var k in mapping){
+        results[mapping[k]] = k;
+    }
+    return results;
+}
+
+const definitionToPlatformMapping = reverse(platformMapping);
+
 module.exports = Object.freeze({
-    NAVIGATOR_BUILDS: navigator_builds,
-    NAVIGATOR_ARTIFACTS: navigator_artifacts,
     PLATFORMS: platformMapping,
+    DEFINITIONS: definitionToPlatformMapping,
 });

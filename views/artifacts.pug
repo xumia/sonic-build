@@ -3,39 +3,27 @@ block block_navigators
   li Files
 block content
   script(type="text/javascript").
-    function copyToClipboard(elementId) {
-      /* Get the text field */
-      var copyText = document.getElementById(elementId);
-
-      /* Select the text field */
-      copyText.select();
-      copyText.setSelectionRange(0, 99999); /* For mobile devices */
-
-      /* Copy the text inside the text field */
-      document.execCommand("copy");
-
-      /* Alert the copied text */
-      alert("Copied the text: " + copyText.value);
-    }
+    function copyToClipboard(e){
+    if(window.clipboardData)return void window.clipboardData.setData("text",e);
+    const t=t=>{const s=t.clipboardData;s&&s.setData("text/plain",e),t.preventDefault()};
+    document.addEventListener("copy",t),document.execCommand("copy"),document.removeEventListener("copy",t)}
   table(class="simpletable")
     tr
       th Seq.
       th Name
       th Size
       th Type
-      th Download
       th Latest Link
     each row in rows
-      //Sequence, DefinitionId, DefinitionName, Platform, SourceBranch'
+      - var href = artifactUrl;
+      - if (row.type == 'directory') { href = href + "&format=zip"; }
+      - var buildHref = href + "&buildId=" + buildId + "&target=" + row.name.substring(1);
+      - var latestHref = href + "&target=" + row.name.substring(1);
       tr
         td= row.seq
-        td= row.name.substring(1)
+        td
+          a(href=buildHref, target="_blank")= row.name.substring(1)
         td= row.size
         td= row.type
         td
-          a(href="/api/sonic/artifacts?target=" + row.name.substring(1), target="_blank") Link
-        td
-          a(id="latest-" + row.seq, href="/api/sonic/artifacts?target=" + row.name.substring(1), target="_blank") Link
-          
-          b &nbsp;&nbsp;&nbsp;
-          button(onclick="copyToClipboard('latest-" + row.seq + "')") Copy
+          button(onclick="copyToClipboard(window.location.origin +'" + latestHref + "')") Copy Latest Static Link

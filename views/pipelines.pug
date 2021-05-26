@@ -2,6 +2,15 @@ extends layout
 block block_navigators
   li Pipelines
 block content
+  - var href = "/ui/sonic/pipelines";
+  - var linkName = "SONiC Image Azure Pipelines";
+  - var pageTitle = "All Azure Pipelines";
+  - var hrefConnChar = "?";
+  - if (fromAzureAPI == true) {href = href + "?fromAzureAPI=true"; hrefConnChar = "&"; }
+  - if (buildType != 'all') {href = href + hrefConnChar + "buildType=all"; var tmp = linkName; linkName = pageTitle; pageTitle = tmp;}
+  h1= pageTitle
+  p= "Go to " + linkName + ": "
+    a(href=href) here
   table(class="simpletable")
     tr
       th Seq.
@@ -10,7 +19,6 @@ block content
       th DefinitionId
       th DefinitionName
       th Builds
-      th LatestArtifacts
     each row in rows
       //Sequence, DefinitionId, DefinitionName, Platform, SourceBranch'
       tr
@@ -22,5 +30,3 @@ block content
           a(href="https://dev.azure.com/mssonic/build/_build?definitionId=" + row[1], target="_blank")= row[2]
         td
           a(href="/ui/sonic/pipelines/" + row[1] + "/builds?branchName="  + row[4]) Build History
-        td
-          a(href="/ui/sonic/pipelines/" + row[1] + "/builds/latest/artifacts?branchName=" + row[4], target="_blank") Latest Artifacts

@@ -11,7 +11,8 @@ const buildUrlFormat = "https://dev.azure.com/mssonic/build/_apis/build/builds?d
 const buildResultUrlFormat = "https://dev.azure.com/mssonic/build/_build/results?buildId=%s&view=artifacts&pathAsName=false&type=publishedArtifacts";
 const artifactUrlFormat = "https://dev.azure.com/mssonic/build/_apis/build/builds/%s/artifacts";
 
-const query_sonicimagebuilds = 'GetSonicImageBuilds()  | order by Platform asc, SourceBranch desc | project Sequence=row_number(), DefinitionId, DefinitionName, Platform, SourceBranch'
+const query_sonicimagebuilds = 'GetSonicImageBuilds() | project Sequence=row_number(), DefinitionId, DefinitionName, Platform, SourceBranch'
+const query_sonicbuilds = 'GetSonicBuilds() | project Sequence=row_number(), DefinitionId, DefinitionName, Platform, SourceBranch'
 
 function GetArtifactItems(items){
   var results = [];
@@ -38,19 +39,19 @@ function GetArtifacts(artifacts){
     for(var item in artifacts.item);
 }
 
-// Navigators
-// Home/Builds|ImageBuilds/buildName|Latest/artifacts
-// URL /sonicimagebuilds/<buildName>/[<buildId>|latest]/artifacts
-// URL: /builds[/folder/folderName]*/<buildName>/[<buildId>|latest]/artifacts
-
-/* Get SONiC pipelines. */
+/* Get SONiC pipelines */
 router.get('/sonic/pipelines', async function(req, res, next) {
-    console.log(req);
-    console.log(constants.NAVIGATOR_BARTIFACTS);
-    var results = await kusto.query(query_sonicimagebuilds);
+    var queryCommand = query_sonicimagebuilds;
+    if (req.query.buildType == 'all'){
+      queryCommand = query_sonicbuilds;
+    }
+
+    var fromAzureAPI = req.query.fromAzureAPI == 'true';
+    var results = await kusto.query(queryCommand, 1000 * 20, fromAzureAPI=fromAzureAPI);
     res.render('pipelines', { title: 'Pipelines',
-      columns: kusto.getColumnNames(results),
       rows: results['_rows'],
+      fromAzureAPI: fromAzureAPI,
+      buildType: req.query.buildType,
       navigators:[] });
   });
 
@@ -63,6 +64,7 @@ router.get('/sonic/pipelines/:definitionId/builds', function(req, res, next) {
   var builds = JSON.parse(buildsRes.getBody('utf8'));
   res.render('builds', { title: 'Builds',
       rows: builds['value'],
+      branchName: query.branchName,
       navigators:navigator_pipelines });
 });
 
@@ -79,10 +81,7 @@ router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts', function(
     row["seq"] = i + 1;
     row["definitionId"] = params.definitionId;
     row["buildId"] = params.buildId;
-    console.log(i);
-    console.log(row.name);
   }
-  console.log(artifacts['value']);
   res.render('artifact-names', { title: 'Artifacts',
       rows: artifacts['value'],
       branchName: query.branchName,
@@ -114,14 +113,23 @@ router.get('/sonic/pipelines/:definitionId/builds/:buildId/artifacts/:artifactId
     };
     var artifactsRes = request('POST', url, options);
     var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
-    console.log(artifacts);
     var dataProvider = artifacts['dataProviders']['ms.vss-build-web.run-artifacts-data-provider'];
     var items = GetArtifactItems(dataProvider.items);
     for (var i=0; i<items.length; i++){
         items[i]['seq'] = i + 1;
     }
+    var platform = constants.DEFINITIONS[params.definitionId];
+    var artifactUrl = "/api/sonic/artifacts?branchName=" + query.branchName;
+    if (platform != null){
+        artifactUrl = artifactUrl + "&platform=" + platform;
+    }
+    else{
+        artifactUrl = artifactUrl + "&definitionId=" + params.definitionId + "&artifactName=" + query.artifactName;
+    }
     res.render('artifacts', { title: 'Artifact ' + query.artifactName,
       rows: items,
+      artifactUrl: artifactUrl,
+      buildId: params.buildId,
       navigators: navigator_artifacts});
 });
 

@@ -74,8 +74,8 @@ function RedirectSonicArtifacts(req, res, next) {
     }
 
     var definitionId = query.definitionId;
+    var platform = query.platform;
     if (definitionId == null){
-        var platform = query.platform;
         if (platform == null){
             var message = "The parameter platform is empty.";
             return res.status(400).json({status: 400, message: message});
@@ -92,7 +92,10 @@ function RedirectSonicArtifacts(req, res, next) {
         query.subPath = query.target;
     }
     
-    query['artifactName'] = 'sonic-buildimage.' + platform;
+    if (query['artifactName'] == null){
+        query['artifactName'] = 'sonic-buildimage.' + platform; 
+    }
+
     RedirectArtifacts(req, res, next);
 }
 
@@ -106,32 +109,9 @@ function GetToken(req, res, next) {
   res.end();
 }
 
-async function GetBuilds(req, res, next) {
-  var items = await kusto.query('GetBuilds()');
-  var results = kusto.parseQueryResults(items);
-  res.write(JSON.stringify(results));
-  res.end();
-}
-
-function GetArtifacts(req, res, next) {
-  var url = 'https://dev.azure.com/mssonic/_apis/Contribution/HierarchyQuery/project/be1b070f-be15-4154-aade-b1d3bfb17054';
-  var body = {"contributionIds":["ms.vss-build-web.run-artifacts-data-provider"],"dataProviderContext":{"properties":{"artifactId":32323,"buildId":15444,"sourcePage":{"url":"https://dev.azure.com/mssonic/build/_build/results?buildId=15444&view=artifacts&pathAsName=false&type=publishedArtifacts","routeValues":{"project":"build","action":"Execute"}}}}};
-  var options = {
-    headers: {'accept': 'application/json;api-version=5.0-preview.1',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  };
-  var artifactsRes = request('POST', url, options);
-  var artifacts = JSON.parse(artifactsRes.getBody('utf8'));
-  var dataProvider = artifacts['dataProviders']['ms.vss-build-web.run-artifacts-data-provider']
-  res.write(JSON.stringify(dataProvider));
-  res.end();
-}
-
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+  res.redirect('/ui/sonic/pipelines');
 });
 
 /* Redirect to the latest build */
@@ -143,13 +123,9 @@ router.get('/azp/:organization/:project/_apis/build/definition/:definitionId/bui
 router.get('/azp/:organization/:project/_apis/build/definition/:definitionId/build/:buildId/artifacts', RedirectArtifacts);
 
 /* Get the SONiC build artifacts */
-router.get('/sonic/artifacts', RedirectSonicArtifacts);
+router.get('/sonic/artifacts', RedirectSonicArtifacts); // Deprecated
 router.get('/api/sonic/artifacts', RedirectSonicArtifacts);
 
 router.get('/api/token', GetToken);
-
-router.get('/api/builds', GetBuilds);
-
-router.get('/api/artifacts', GetArtifacts);
 
 module.exports = router;

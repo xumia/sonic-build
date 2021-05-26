@@ -6,6 +6,7 @@ block content
     tr
       th BuildId
       th BuildNumber
+      th BranchName
       th BuildName
       th Result
       th StartTime
@@ -16,6 +17,7 @@ block content
       tr
         td= row.id
         td= row.buildNumber
+        td= branchName
         td= row.definition.name
         td= row.result
         td= row.startTime.substring(0,19)
