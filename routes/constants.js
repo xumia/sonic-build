@@ -1,8 +1,8 @@
 const navigator_builds = [{name:'Pipelines', href:'/Pipelines'}];
 const navigator_artifacts = navigator_builds.concat([{name:'Artifacts', href:'/Pipelines/artifacts'}]);
 
-
-const platformMapping = {"broadcom" : 138,
+const platformMapping = {
+"broadcom" : 138,
 "barefoot" : 146,
 "centec" : 143,
 "centec-arm64" : 140,

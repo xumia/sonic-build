@@ -10,12 +10,7 @@ const database = "build";
 
 const kcs = KustoConnectionStringBuilder.withAadManagedIdentities(clusterConectionString);
 const kustoClient = new KustoClient(kcs);
-
 const TEST = false;
-
-function compareDefinition(a, b){
-    
-}
 
 /* Query builds from Azure Pipelines, only for test
    Only support to list the default branch for a definition, it is hard to list all the branches for Azure Pipelines API in a single query*/
